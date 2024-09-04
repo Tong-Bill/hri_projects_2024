@@ -1,0 +1,19 @@
+What happens when you close one or the other?
+Closing the publisher/talker results in subscriber/listener endlessly waiting
+Closing the subscriber has no effect on the publisher
+
+What happens when you close the core node?
+Closing roscore seems to have no effect on publisher/subscriber if they are already running. However, publisher will be unable to start running without roscore up.
+
+What happens when you change the rate for the talker?
+@rate=1, both the publisher/subscriber outputs at a rate of 1 per second
+@rate=100, both the publisher/subscriber outputs at a rate of 100 per second
+@rate=100000, both the publisher/subscriber outputs at a rate of 100000 per second
+@rate=0.1, both the publisher/subscriber outputs at a rate of 1 per 10 seconds
+@rate=0.001, both the publisher/subscriber outputs at a rate of 1 per 1000 seconds
+
+What happens when you start 2 talker nodes?
+You are able to run 2 talker nodes with no problem.
+
+What happens when you start 2 listener nodes?
+You are also able to run 2 listener nodes with no problem.
