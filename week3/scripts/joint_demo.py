@@ -2,7 +2,6 @@
 # license removed for brevity
 import rospy
 import math
-
 from sensor_msgs.msg import JointState
 
 def talker():
@@ -26,7 +25,32 @@ def talker():
         # put in some joints that we'll edit
         js.name.append("HeadYaw")
         js.name.append("HeadPitch")
-
+        # Adding additional Joints
+	'''
+	js.name.append("LHipYawPitch")
+	js.name.append("LHipRoll")
+	js.name.append("LHipPitch")
+	js.name.append("LKneePitch")
+	js.name.append("LAnklePitch")
+	js.name.append("LAnkleRoll")
+	js.name.append("RHipRoll")
+	js.name.append("RHipPitch")
+	js.name.append("RKneePitch")
+	js.name.append("RAnklePitch")
+	js.name.append("RAnkleRoll")
+	js.name.append("LShoulderPitch")
+	js.name.append("LLShoulderRoll")
+	js.name.append("LElbowYaw")
+	js.name.append("LElbowRoll")
+	js.name.append("LWristYaw")
+	js.name.append("LHand")
+	js.name.append("RShoulderPitch")
+	js.name.append("RShoulderRoll")
+	js.name.append("RElbowYaw")
+	js.name.append("RElbowRoll")
+	js.name.append("RWristYaw")
+	js.name.append("RHand")
+	'''
         js.position.append(math.radians(angle))
         js.position.append(0)
 
