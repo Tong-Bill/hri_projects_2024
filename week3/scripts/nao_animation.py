@@ -5,6 +5,9 @@ import rospy
 import math
 from sensor_msgs.msg import JointState
 
+# Week4 incorporates class implementation and no longer uses function based calling
+# Interpolated movement: using a loop to reduce the point to point movements
+# Increasing rospy.rate speeds up nao movement, also making it less choppy
 '''
 # For initializing position of joints and testing joint movement, replaced by position.append() portion
 class Joints:
@@ -147,56 +150,132 @@ def right_gesture(pub, js, rate):
 	# Negative alpha means joint moves up, positive means joint moves down
 	# Negative beta means joint moves right(Robot's rightside)
 	right_shoulder(pub, js, 0, 0, rate)
+	'''
 	right_shoulder(pub, js, -75, 0, rate)
-	js.position[js.name.index("RHand")] = math.radians(-90)
 	right_shoulder(pub, js, -75, -75, rate)
 	right_shoulder(pub, js, -45, -30, rate)
 	right_shoulder(pub, js, -75, -75, rate)
 	right_shoulder(pub, js, -45, -30, rate)
 	right_shoulder(pub, js, 0, 0, rate)
-	js.position[js.name.index("RHand")] = math.radians(0)
-
+	'''
+	# recall that: range(start, stop, step)
+	for frame in range(0, -75, -15):
+		right_shoulder(pub, js, frame, 0, rate)
+	for frame in range(0, -75, -15):
+		right_shoulder(pub, js, -75, frame, rate)
+	for frame in range(-75, -15, 15):
+		right_shoulder(pub, js, -75, frame, rate)
+	for frame in range(-15, -75, -15):
+		right_shoulder(pub, js, -75, frame, rate)
+	for frame in range(-75, 0, 15):
+		right_shoulder(pub, js, -75, frame, rate)
+	for frame in range(-75, 0, 15):
+		right_shoulder(pub, js, frame, 0, rate)
+	right_shoulder(pub, js, 0, 0, rate)
+	
+	
 def left_gesture(pub, js, rate):
 	ready_joints(js)
 	# Negative alpha means joint moves up, positive means joint moves down
 	# Positive beta means joint moves left(Robot's leftside)
-	right_shoulder(pub, js, 0, 0, rate)
+	left_shoulder(pub, js, 0, 0, rate)
+	'''
 	left_shoulder(pub, js, -75, 0, rate)
-	js.position[js.name.index("LHand")] = math.radians(-90)
 	left_shoulder(pub, js, -75, 75, rate)
 	left_shoulder(pub, js, -45, 30, rate)
 	left_shoulder(pub, js, -75, 75, rate)
 	left_shoulder(pub, js, -45, 30, rate)
 	left_shoulder(pub, js, 0, 0, rate)
-	js.position[js.name.index("LHand")] = math.radians(0)
+	'''
+	for frame in range(0, -75, -15):
+		left_shoulder(pub, js, frame, 0, rate)
+	for frame in range(0, 75, 15):
+		left_shoulder(pub, js, -75, frame, rate)
+	for frame in range(75, 15, -15):
+		left_shoulder(pub, js, -75, frame, rate)
+	for frame in range(15, 75, 15):
+		left_shoulder(pub, js, -75, frame, rate)
+	for frame in range(75, 0, -15):
+		left_shoulder(pub, js, -75, frame, rate)
+	for frame in range(-75, 0, 15):
+		left_shoulder(pub, js, frame, 0, rate)
+	left_shoulder(pub, js, 0, 0, rate)  
 	
 def move_head(pub, js ,rate):
 	ready_joints(js)
 	# Nodding head
 	robot_head(pub, js, 0, 0, rate)
+	'''
 	robot_head(pub, js, 30, 0, rate)
 	robot_head(pub, js, -30, 0, rate)
 	robot_head(pub, js, 0, 0, rate)
+	'''
+	for frame in range(0, 30, 10):
+		robot_head(pub, js, frame, 0, rate)
+	for frame in range(30, -30, -10):
+		robot_head(pub, js, frame, 0, rate)
+	for frame in range(-30, 30, 10):
+		robot_head(pub, js, frame, 0, rate)
+	for frame in range(30, -30, -10):
+		robot_head(pub, js, frame, 0, rate)
+	for frame in range(-30, 0, 10):
+		robot_head(pub, js, frame, 0, rate)
+	robot_head(pub, js, 0, 0, rate)
+	
+	
 	# Shaking head
 	robot_head(pub, js, 0, 0, rate)
+	'''
 	robot_head(pub, js, 0, -30, rate)
 	robot_head(pub, js, 0, 30, rate)
 	robot_head(pub, js, 0, -30, rate)
 	robot_head(pub, js, 0, 30, rate)
 	robot_head(pub, js, 0, 0, rate)
-
+	'''
+	for frame in range(0, -30, -10):
+		robot_head(pub, js, 0, frame, rate)
+	for frame in range(-30, 30, 10):
+		robot_head(pub, js, 0, frame, rate)
+	for frame in range(30, -30, -10):
+		robot_head(pub, js, 0, frame, rate)
+	for frame in range(-30, 30, 10):
+		robot_head(pub, js, 0, frame, rate)
+	for frame in range(30, 0, -10):
+		robot_head(pub, js, 0, frame, rate)
+	robot_head(pub, js, 0, 0, rate)
+	
 def move_ankles(pub, js, rate):
 	ready_joints(js)
 	# Sets both ankles to inital position
 	# Alternates between movement of right and left ankle
 	right_ankle(pub, js, 0, 0, rate)
 	left_ankle(pub, js, 0, 0, rate)
+	'''
 	right_ankle(pub, js, 45, 0, rate)
 	left_ankle(pub, js, -45, 0, rate)
 	right_ankle(pub, js, 0, 0, rate)
 	left_ankle(pub, js, 0, 0, rate)
 	right_ankle(pub, js, -45, 0, rate)
 	left_ankle(pub, js, 45, 0, rate)
+	right_ankle(pub, js, 0, 0, rate)
+	left_ankle(pub, js, 0, 0, rate)
+	'''
+	for frame in range(0, -45, -5):
+		right_ankle(pub, js, frame, 0, rate)
+	for frame in range(0, 45, 5):
+		left_ankle(pub, js, frame, 0, rate)
+	for frame in range(-45, 45, 5):
+		right_ankle(pub, js, frame, 0, rate)
+	for frame in range(45, -45, -5):
+		left_ankle(pub, js, frame, 0, rate)
+	for frame in range(45, -45, -5):
+		right_ankle(pub, js, frame, 0, rate)
+	for frame in range(-45, 45, 5):
+		left_ankle(pub, js, frame, 0, rate)
+	for frame in range(-45, 0, 5):
+		right_ankle(pub, js, frame, 0, rate)
+	for frame in range(45, 0, -5):
+		left_ankle(pub, js, frame, 0, rate)
 	right_ankle(pub, js, 0, 0, rate)
 	left_ankle(pub, js, 0, 0, rate)
 
@@ -213,7 +292,7 @@ if __name__ == '__main__':
 	# Close joint_state_publisher_gui before running
 	pub = rospy.Publisher('joint_states', JointState, queue_size=10)
 	rospy.init_node('talker', anonymous=True)
-	rate = rospy.Rate(1) # 10hz
+	rate = rospy.Rate(10) # 10hz
 	#hello_str = "hello world %s" % rospy.get_time()
 	js = JointState()
 
@@ -224,7 +303,7 @@ if __name__ == '__main__':
 		left_gesture(pub, js, rate)
 		# Nod head, then shake head   
 		move_head(pub, js, rate)
-		# Move ankles back and forth to simulate walking
+		# Move ankles back and forth to simulate feet motion
 		move_ankles(pub, js, rate)
 
 	except rospy.ROSInterruptException:
