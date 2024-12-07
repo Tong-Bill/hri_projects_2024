@@ -11,6 +11,8 @@ from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from people_msgs.msg import PositionMeasurementArray
+from geometry_msgs.msg import TransformStamped
+import re
 
 # this is based on the Robotics Back-End: https://roboticsbackend.com/oop-with-ros-in-python/
 # From https://docs.ros.org/en/api/people_msgs/html/msg/PositionMeasurementArray.html
@@ -71,19 +73,55 @@ class MoveStraightOdom:
 			   
 	def item_callback(self, data):
 		# We need to get the position of the person using tf
-		# Modified from the previous project 
+		# Modified from the previous project
 		if data.people:
-			# Class reminder: lookup name must be 'base_link'
-			trans = self.tfBuffer.lookup_transform('base_link', data.people[0].name, rospy.Time())
+			# Maybe for multiple robots in the same map
+			# https://wiki.ros.org/geometry/CoordinateFrameConventions
+			# 'base_link' only works for one robot
+			trans1: TransformStamped = self.tfBuffer.lookup_transform('/r0/base_link', data.people[0].name, rospy.Time())
+			trans2: TransformStamped = self.tfBuffer.lookup_transform('/r1/base_link', data.people[1].name, rospy.Time())
+			trans3: TransformStamped = self.tfBuffer.lookup_transform('/r2/base_link', data.people[2].name, rospy.Time())
+						
+			alpha1 = trans1.transform.translation.x
+			beta1 = trans1.transform.translation.y
+			
+			alpha2 = trans2.transform.translation.x
+			beta2 = trans2.transform.translation.y
+			
+			alpha3 = trans2.transform.translation.x
+			beta3 = trans2.transform.translation.y
+			
+			# Not the final calculations, just need the general location for now
+			alpha = (alpha1 + alpha2 + alpha3) / 3
+			beta = (beta1 + beta2 + beta3) / 3
+			
+			'''
+			# Nothing is working, below is extracting positions from world file to see if it works
+			# https://docs.python.org/3/library/re.html
+			file_path = "/home/bt/hri2024/src/hri_projects_2024/weekb/world/4person.world"
+			with open(file_path, 'r') as file:
+        			content = file.read()
+
+			person_poses = re.findall(r'(r\d+).*?pose\s+\[([^\]]+)\]', content, re.DOTALL)
+			xPositions = []
+			yPositions = []
+			for person, pose in person_poses:
+				pose_values = [float(v) for v in pose.split()]
+				xPositions.append(pose_values[0])
+				yPositions.append(pose_values[1])
+			alpha = sum(xPositions)/3
+			beta = sum(yPositions)/3
+			file.close()
+			'''
 			# Alpha refers to the x position of the legs
-			alpha = trans.transform.translation.x
+			#alpha = trans.transform.translation.x
 			# Beta refers to the y position of the legs
-			beta = trans.transform.translation.y
+			#beta = trans.transform.translation.y
 			# Calculations for distance is the square-root of (x^2 + y^2)
 			self.targetDistance = math.sqrt(beta*beta + alpha*alpha)
             		# Calculations for angle the legs are at is arctan(y position, x position)
             		# We need angle so the robot can turn in that direction
-			self.targetAngle = math.atan2(beta, alpha) 
+			self.targetAngle = math.atan2(beta, alpha)
 			
 	def get_odom(self):
 		return self.odom
@@ -155,6 +193,11 @@ if __name__ == '__main__':
 					t.angular.z = 1*0.25
 				else:
 					t.angular.z = -1*0.25
+			else:
+				# This seems to be the problem right now
+				# Printed value of 0 means something is wrong in the calculations part
+				print(abs(n.targetAngle))
+
 
 		# For calculating distances when moving straight
 		if robotMovement == True:
