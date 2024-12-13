@@ -11,8 +11,8 @@ from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from people_msgs.msg import PositionMeasurementArray
-from geometry_msgs.msg import TransformStamped
 import re
+
 
 # this is based on the Robotics Back-End: https://roboticsbackend.com/oop-with-ros-in-python/
 # From https://docs.ros.org/en/api/people_msgs/html/msg/PositionMeasurementArray.html
@@ -20,9 +20,9 @@ import re
 class MoveStraightOdom:
 	def __init__(self):
 		self.odom = Odometry()
-		self.pub = rospy.Publisher("/cmd_vel", Twist, queue_size=10)
-		self.sub = rospy.Subscriber("/odom", Odometry, self.odom_callback)
-		self.scan = rospy.Subscriber("/base_scan", LaserScan, self.scan_callback)
+		self.pub = rospy.Publisher("robot_0/cmd_vel", Twist, queue_size=10)
+		self.sub = rospy.Subscriber("robot_0/odom", Odometry, self.odom_callback)
+		self.scan = rospy.Subscriber("robot_0/base_scan", LaserScan, self.scan_callback)
 		self.item = rospy.Subscriber("/people_tracker_measurements", PositionMeasurementArray, self.item_callback)
 		
 		# Maximum number of squares in the map seems to be ~25
@@ -70,6 +70,39 @@ class MoveStraightOdom:
 			self.closestObstacle = rightSide
 		else:
 			self.closestObstacle = frontOfRobot
+	
+	'''
+	Can't seem to implemet it, the idea is this:
+	-Retrieve the info of all 3 people
+	-Sum up the x position of all 3 people and divide by 3 to find the average
+	-Sum up the y position of all 3 people and divide by 3 to find the average
+	-Now that we know the location for robot to go to, Calculate a circle around that that center point, and have the robot stop when it hits that center point.
+	
+	def center_point(x1, x2, x3, y1, y2, y3)
+		x_center = (x1 + x2 + x3) / 3
+		y_center = (y1 + y2 + y3) / 3
+		
+		x_center, y_c = center
+		angle_rad = math.radians(angle)
+		x = x_center + radius * math.cos(angle_radians)
+		y = y_center + radius * math.sin(angle_radians)
+		return(x,y)
+		
+	-We return x,y which is the position on the circle the robot will stop at
+	-We don't want the robot to stop at x_center,y_center since that is in the middle of all 3 people
+	-Pass them into distance and angle calculations below to then be fed into robot to combine with object detection/avoidance as completed in week 9
+	-The radius of the circle can be a hyperparameter set to ~2 map units since distance of the imaginary circle around all 3 people is ~4 units
+	
+	-Was able to get the tfbuffer working, by moving broadcaster to seperate file, and using robot_0 as the name
+	-Verified that it works by printing the x position and y position
+	-To check if the people are in circle or line formation, subtract the distance between the first person and last person in data.people
+	
+	For people in a line:
+	-If one of the following: x_position or y_position are more than 1 unit apart and the other is within 1 unit, then we know that it is a line either horizontal or vertical, otherwise it is a circle.
+	-For people in a line, retrieve info of all the people,  decide left or right for the robot to join on
+	
+	
+	'''
 			   
 	def item_callback(self, data):
 		# We need to get the position of the person using tf
@@ -77,46 +110,17 @@ class MoveStraightOdom:
 		if data.people:
 			# Maybe for multiple robots in the same map
 			# https://wiki.ros.org/geometry/CoordinateFrameConventions
-			# 'base_link' only works for one robot
-			trans1: TransformStamped = self.tfBuffer.lookup_transform('/r0/base_link', data.people[0].name, rospy.Time())
-			trans2: TransformStamped = self.tfBuffer.lookup_transform('/r1/base_link', data.people[1].name, rospy.Time())
-			trans3: TransformStamped = self.tfBuffer.lookup_transform('/r2/base_link', data.people[2].name, rospy.Time())
-						
-			alpha1 = trans1.transform.translation.x
-			beta1 = trans1.transform.translation.y
+			# 'base_link' only works for one robot, apparently robot_0 is the name
 			
-			alpha2 = trans2.transform.translation.x
-			beta2 = trans2.transform.translation.y
+			trans = self.tfBuffer.lookup_transform('robot_0/base_link', data.people[0].name, rospy.Time())
 			
-			alpha3 = trans2.transform.translation.x
-			beta3 = trans2.transform.translation.y
+			for item in data.people:
+				print(f'x:{item.pos.x} y:{item.pos.y}')
 			
-			# Not the final calculations, just need the general location for now
-			alpha = (alpha1 + alpha2 + alpha3) / 3
-			beta = (beta1 + beta2 + beta3) / 3
-			
-			'''
-			# Nothing is working, below is extracting positions from world file to see if it works
-			# https://docs.python.org/3/library/re.html
-			file_path = "/home/bt/hri2024/src/hri_projects_2024/weekb/world/4person.world"
-			with open(file_path, 'r') as file:
-        			content = file.read()
-
-			person_poses = re.findall(r'(r\d+).*?pose\s+\[([^\]]+)\]', content, re.DOTALL)
-			xPositions = []
-			yPositions = []
-			for person, pose in person_poses:
-				pose_values = [float(v) for v in pose.split()]
-				xPositions.append(pose_values[0])
-				yPositions.append(pose_values[1])
-			alpha = sum(xPositions)/3
-			beta = sum(yPositions)/3
-			file.close()
-			'''
 			# Alpha refers to the x position of the legs
-			#alpha = trans.transform.translation.x
+			alpha = trans.transform.translation.x
 			# Beta refers to the y position of the legs
-			#beta = trans.transform.translation.y
+			beta = trans.transform.translation.y
 			# Calculations for distance is the square-root of (x^2 + y^2)
 			self.targetDistance = math.sqrt(beta*beta + alpha*alpha)
             		# Calculations for angle the legs are at is arctan(y position, x position)
@@ -129,33 +133,6 @@ class MoveStraightOdom:
 	def get_scan(self):
 		return self.scan
 		
-# Originally wanted to make broadcaster in same file, moved to file 'week9_broadcaster.py' 
-'''
-def callback(data):
-	#rospy.loginfo(rospy.get_caller_id() + 'I heard %s', data)
-	bf = tf.TransformBroadcaster()
-	for item in data.people:
-	bf.sendTransform((item.pos.x,item.pos.y,item.pos.z),tf.transformations.quaternion_from_euler(0, 0, 0),rospy.Time.now(),item.name,'odom')
-	
-	# The robot should consider its leftside, rightside, and infront
-	# Split 1081 into 3 different ranges
-	leftSide = min(data.ranges[721:])
-	rightSide = min(data.ranges[:360])
-	frontOfRobot = min(data.ranges[361:720])
- 
-def listener():
-	# In ROS, nodes are uniquely named. If two nodes with the same
-	# name are launched, the previous one is kicked off. The
-	# anonymous=True flag means that rospy will choose a unique
-	# name for our 'listener' node so that multiple listeners can
-	# run simultaneously.
-	rospy.init_node('listener', anonymous=True)
-
-	#rospy.Subscriber('chatter', String, callback)
-	rospy.Subscriber('base_scan', LaserScan, callback)
-	# spin() simply keeps python from exiting until this node is stopped
-	rospy.spin()
-'''
 
 if __name__ == '__main__':
 	rospy.init_node('track_legs')
