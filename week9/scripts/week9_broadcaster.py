@@ -16,6 +16,7 @@ from geometry_msgs.msg import TransformStamped
 
 # Trying to implement broadcaster in the same file didn't work, decided to implement in separate file
 # Apparently this is the correct way to implement tf based on the ros tutorials
+# Also used for weekb, works well for week 9
 
 def callback(data):
 
